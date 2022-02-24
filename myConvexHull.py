@@ -1,148 +1,118 @@
 import numpy as np
 import math
 
-def inLine(p1, p2, p3):
-    return ((math.dist(p1, p3) + math.dist(p2, p3)) == math.dist(p1, p2))
-
-# returns -1 when point is in the left of a line and 1 when the opposite
-def checkPosition(p1, p2, p3):
-    p1 = np.append(p1, 1)
-    p2 = np.append(p2, 1)
-    p3 = np.append(p3, 1)
-    temp = [p1, p2, p3]
-    det = np.linalg.det(temp)
-    if det < 0:
-        return 1
-    else:
-        return -1
-
-def getAngle(p1, p2, p3):
-    p1x, p1y = p1[0] - p3[0], p1[1] - p3[1]
-    p2x, p2y = p2[0] - p3[0], p2[1] - p3[1]
-    a = math.atan2(p1x, p1y)
-    b = math.atan2(p2x, p2y)
-    if a < 0:
-        a += math.pi * 2
-    if b < 0:
-        b += math.pi * 2
-    if (a > b):
-        return (math.pi * 2 + b - a)
-    else:
-        return b - a
-
-def getFarthest(p1, p2, list):
-    farthest = [0, 0] # distance + angle
-    for arr in list:
-        angle = getAngle(p1, p2, arr)
-        dist = math.dist(p1, arr) + math.dist(p2, arr)
-        if (dist > farthest[0] or (dist == farthest and angle > farthest[1])):
-            farthest[0] = dist
-            farthest[1] = angle
-            point = arr
-    return point # return distance only
-
 def getExtremes(arr):
-    arr = arr[arr[:, 0].argsort()]
+    """Returns leftmost and rightmost point"""
+    
+    arr = arr[arr[:, 0].argsort()] # sort based on x - coordinate
     minPoint = arr[0]
     maxPoint = arr[-1]
     return minPoint, maxPoint
 
+def inLine(p1, p2, p3):
+    """Returns true if p3 is in line (check by distance)"""
+
+    return ((math.dist(p1, p3) + math.dist(p2, p3)) == math.dist(p1, p2))
+
+def checkPosition(p1, p2, p3):
+    """Checks position of p3 relative to p1 and p2 through determinant
+    (return 1 when p3 is in rightside and -1 when p3 is in leftside)"""
+
+    p1 = np.append(p1, 1)
+    p2 = np.append(p2, 1)
+    p3 = np.append(p3, 1)
+    temp = [p1, p2, p3]
+    det = np.linalg.det(temp) 
+    if det < 0:
+        return 1 # p3 in rightside
+    else:
+        return -1 # p3 in leftside
+
+def getAngle(p1, p2, p3):
+    """Return angle between p1, p3, and p2"""
+
+    p1x, p1y = p1[0] - p3[0], p1[1] - p3[1]
+    a1 = math.atan2(p1x, p1y) # find arctan
+    if a1 < 0: # negative case
+        a1 += math.pi * 2 
+    p2x, p2y = p2[0] - p3[0], p2[1] - p3[1]
+    a2 = math.atan2(p2x, p2y) # find arctan
+    if a2 < 0: # negative case
+        a2 += math.pi * 2 
+    if (a1 > a2): # negative case
+        return (math.pi * 2 + a2 - a1)
+    else:
+        return a2 - a1
+
+def getFarthest(p1, p2, list):
+    """Return farthest point from p1 and p2"""
+
+    farthest = [0, 0] # store distance and angle for comparison
+    for arr in list: 
+        angle = getAngle(p1, p2, arr) # get angle for pmax comparison
+        dist = math.dist(p1, arr) + math.dist(p2, arr) # get p1 - point - p2 distance
+        if (dist > farthest[0] or (dist == farthest and angle > farthest[1])):
+            farthest[0] = dist
+            farthest[1] = angle
+            point = arr
+    return point # return farthest point only
+
 def insideTriangle(area, p1, p2, pmax):
+    """Remove points inside triangle with points p1, p2, and pmax"""
+
     for arr in area:
-        if not(inLine(p1, p2, arr) or inLine(p1, pmax, arr) or inLine(pmax, p2, arr)):
-            if (arr[0] <= pmax[0] and checkPosition(p1, pmax, arr) == 1):
+        if not(inLine(p1, p2, arr) or inLine(p1, pmax, arr) or inLine(pmax, p2, arr)): # check if point in triangle line
+            if (arr[0] <= pmax[0] and checkPosition(p1, pmax, arr) == 1): # check if point in leftside of pmax and rightside of line pmax-p2
                 np.delete(area, np.argwhere(area == arr))
-            elif (arr[0] >= pmax[0] and checkPosition(pmax, p2, arr) == -1):
+            elif (arr[0] >= pmax[0] and checkPosition(pmax, p2, arr) == -1): # check if point in rightside of pmax and leftside of line pmax-p2
                 np.delete(area, np.argwhere(area == arr))
         else:
             np.delete(area, np.argwhere(area == arr))
 
 def divideArea(arr2D, p1, p2, int):
+    """Find sets by dividing areas based on line with points p1 and p2 where arr2D is filled with all points to be checked and 
+    int indicates recursion phase (0 for init or first recursion, 1 for recursion of upper area, and -1 for recursion of lower area"""
+
     upper = []
     lower = []
     np.delete(arr2D, np.argwhere(arr2D == p1))
     np.delete(arr2D, np.argwhere(arr2D == p2))
 
-    # get left and right side
     for arr in arr2D:
         if not(inLine(p1, p2, arr)):
             if (checkPosition(p1, p2, arr) == -1):
-                upper.append(arr)
+                upper.append(arr) # if point above line, add point to upper list
             else:
-                lower.append(arr)
+                lower.append(arr) # if point below line, add point to lower list
         else:
-            np.delete(arr2D, np.argwhere(arr2D == arr))
+            np.delete(arr2D, np.argwhere(arr2D == arr)) # remove points in line
     
-    # check upper area
-    if (int >= 0):
-        if (not (upper)):
-            result.append([p1, p2])
+    if (int >= 0): # continue checking upper area for init and upper area recursion
+        if (not(upper)):
+            result.append([p1, p2]) # add line to end result if upper list is empty
         else:
-            farthest = getFarthest(p1, p2, upper)
-            insideTriangle(upper, p1, p2, farthest)
-            divideArea(upper, p1, farthest, 1)
-            divideArea(upper, farthest, p2, 1)
+            farthest = getFarthest(p1, p2, upper) # get pmax
+            insideTriangle(upper, p1, p2, farthest) # remove points inside triangle
+            divideArea(upper, p1, farthest, 1) # process leftside of upper area (p1-pmax)
+            divideArea(upper, farthest, p2, 1) # process rightside of upper area (pmax-p2)
 
-    # check lower area
-    if (int <= 0):        
-        if (not (lower) and int <= 0):
-            result.append([p1, p2])
+    if (int <= 0): # continue checking lower area for init and lower area recursion
+        if (not(lower)): 
+            result.append([p1, p2]) # add line to end result if lower list is empty
         else:
-            farthest = getFarthest(p1, p2, lower)
-            insideTriangle(lower, p1, p2, farthest)
-            divideArea(lower, p1, farthest, -1)
-            divideArea(lower, farthest, p2, -1)
-        return
+            farthest = getFarthest(p1, p2, lower) # get pmax
+            insideTriangle(lower, p1, p2, farthest) # remove points inside triangle
+            divideArea(lower, p1, farthest, -1) # process leftside of lower area (p1-pmax)
+            divideArea(lower, farthest, p2, -1) # process rightside of lower area (pmax-p2)
 
 def convexHull(bucket):
+    """Returns list of lines that make up convex hull by implementing divide and conquer algorithm"""
+
+    # initialize variables
     global result
     result = []
     arr2D = np.copy(bucket)
     minPoint, maxPoint = getExtremes(arr2D)
-    arr2D = arr2D[arr2D[:, 0].argsort()]
-    for i in arr2D:
-        print(i[0], i[1])
-    # mulai loop dari sini
-    divideArea(arr2D, minPoint, maxPoint, 0)
-    print(result)
+    # find lines for convex hull
+    divideArea(arr2D, minPoint, maxPoint, 0) # init recursion
     return result
-
-
-
-import matplotlib.pyplot as plt
-from sklearn import datasets
-import pandas as pd
-import numpy as np
-# from convexhull import convexHull
-
-# iris = datasets.load_iris()
-# print('The data matrix:\n',iris['data'])
-# print('The classification target:\n',iris['target'])
-# print('The names of the dataset columns:\n',iris['feature_names'])
-# print('The names of target classes:\n',iris['target_names'])
-# print('The full description of the dataset:\n',iris['DESCR'])
-# print('The path to the location of the data:\n',iris['filename'])
-
-data = datasets.load_iris()
-#create a DataFrame
-df = pd.DataFrame(data.data, columns=data.feature_names)
-print(data.target)
-df['Target'] = pd.DataFrame(data.target)
-print(df.shape)
-df.head()
-
-plt.figure(figsize = (10, 6))
-colors = ['b','r','g']
-plt.title('Petal Width vs Petal Length')
-plt.xlabel(data.feature_names[0])
-plt.ylabel(data.feature_names[1])
-for i in range(len(data.target_names)):
-    bucket = df[df['Target'] == i]
-    bucket = bucket.iloc[:,[0,1]].values
-    hull = convexHull(bucket) #bagian ini diganti dengan hasil implementasi
-    plt.scatter(bucket[:, 0], bucket[:, 1], label=data.target_names[i])
-    for simplex in hull:
-        print(simplex[0], simplex[1])
-        plt.plot([simplex[0][0], simplex[1][0]], [simplex[0][1], simplex[1][1]], colors[i])
-plt.legend()
-plt.show()
