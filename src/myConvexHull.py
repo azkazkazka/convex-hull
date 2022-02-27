@@ -75,31 +75,31 @@ def insideTriangle(area, p1, p2, pmax):
         else:
             np.delete(area, np.argwhere(area == arr))
 
-def divideArea(arr2D, p1, p2, int):
+def divideArea(area, p1, p2, direction):
     """Find sets by dividing areas based on line with points p1 and p2
     
-    Arr2D is filled with all points to be checked and int indicates recursion phase 
+    area is filled with all points to be checked and direction is based on recursion phase 
     (0 for first recursion, 1 for upper area recursion, -1 for lower area recursion"""
 
-    np.delete(arr2D, np.argwhere(arr2D == p1))
-    np.delete(arr2D, np.argwhere(arr2D == p2))
+    np.delete(area, np.argwhere(area == p1))
+    np.delete(area, np.argwhere(area == p2))
     # list for storing points to be checked
     upper = []
     lower = []
 
-    for arr in arr2D:
-        if not(inLine(p1, p2, arr)):
+    for point in area:
+        if not(inLine(p1, p2, point)):
             # if point above line, add point to upper list
-            if (checkPosition(p1, p2, arr) == -1):
-                upper.append(arr)
+            if (checkPosition(p1, p2, point) == -1):
+                upper.append(point)
             # if point below line, add point to lower list
             else:
-                lower.append(arr) 
+                lower.append(point) 
         else:
-            np.delete(arr2D, np.argwhere(arr2D == arr))
+            np.delete(area, np.argwhere(area == point))
     
     # continue checking upper area for init and upper area recursion
-    if (int >= 0):
+    if (direction >= 0):
         if (not(upper)):
             result.append([p1, p2]) # add line to end result if upper list is empty
         else:
@@ -109,7 +109,7 @@ def divideArea(arr2D, p1, p2, int):
             divideArea(upper, farthest, p2, 1) # rightside upper area recursion
 
     # continue checking lower area for init and lower area recursion
-    if (int <= 0):
+    if (direction <= 0):
         if (not(lower)): 
             result.append([p1, p2]) # add line to end result if lower list is empty
         else:
@@ -125,9 +125,9 @@ def convexHull(bucket):
     # initialize variables
     global result
     result = []
-    arr2D = np.copy(bucket)
+    area = np.copy(bucket)
     # get two starting points
-    minPoint, maxPoint = getExtremes(arr2D)
+    minPoint, maxPoint = getExtremes(area)
     # find lines for convex hull
-    divideArea(arr2D, minPoint, maxPoint, 0) # first recursion
+    divideArea(area, minPoint, maxPoint, 0) # first recursion
     return result

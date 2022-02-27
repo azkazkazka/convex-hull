@@ -1,0 +1,7 @@
+List dataset yang digunakan:
+
+1. Iris (sklearn)
+2. Wine (sklearn)
+3. Breast Cancer (sklearn)
+4. banknote (CSV)
+5. indiansdiabetes (CSV)
